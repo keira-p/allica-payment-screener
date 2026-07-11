@@ -119,3 +119,55 @@ def test_very_high_value_new_payee_payment_is_blocked():
     assert result["risk_score"] == 90
     assert "HIGH_VALUE_NEW_PAYEE" in reason_codes
     assert "VERY_HIGH_VALUE_PAYMENT" in reason_codes
+
+
+def test_third_payment_within_ten_minutes_is_reviewed():
+    payment_one = make_payment(
+        payment_id="velocity-payment-001",
+        amount=500.00,
+        is_new_payee=False,
+    )
+    payment_one["timestamp"] = "2026-01-15T09:00:00Z"
+    payment_one["account_id"] = "velocity-test-account"
+
+    payment_two = make_payment(
+        payment_id="velocity-payment-002",
+        amount=500.00,
+        is_new_payee=False,
+    )
+    payment_two["timestamp"] = "2026-01-15T09:04:00Z"
+    payment_two["account_id"] = "velocity-test-account"
+
+    payment_three = make_payment(
+        payment_id="velocity-payment-003",
+        amount=500.00,
+        is_new_payee=False,
+    )
+    payment_three["timestamp"] = "2026-01-15T09:08:00Z"
+    payment_three["account_id"] = "velocity-test-account"
+
+    first_response = client.post(
+        "/payments/screen",
+        json=payment_one,
+    )
+    second_response = client.post(
+        "/payments/screen",
+        json=payment_two,
+    )
+    third_response = client.post(
+        "/payments/screen",
+        json=payment_three,
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert third_response.status_code == 200
+
+    assert first_response.json()["decision"] == "approve"
+    assert second_response.json()["decision"] == "approve"
+
+    third_result = third_response.json()
+
+    assert third_result["decision"] == "review"
+    assert third_result["risk_score"] == 50
+    assert third_result["reasons"][0]["code"] == "HIGH_PAYMENT_VELOCITY"
