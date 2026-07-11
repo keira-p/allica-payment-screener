@@ -5,9 +5,12 @@ from pydantic import BaseModel
 
 from rules import check_high_value_new_payee, check_very_high_value_payment
 
+from database import initialise_database, save_payment
+
 
 app = FastAPI(title="Allica Payment Screener")
 
+initialise_database()
 
 class Payee(BaseModel):
     name: str
@@ -67,6 +70,8 @@ def screen_payment(payment: Payment):
         message = f"Payment requires {decision} because one or more fraud rules were triggered."
     else:
         message = "Payment approved because no fraud rules were triggered."
+
+    save_payment(payment)
 
     return {
         "payment_id": payment.payment_id,
