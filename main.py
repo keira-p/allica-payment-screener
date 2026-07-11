@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from rules import check_high_value_new_payee
+from rules import check_high_value_new_payee, check_very_high_value_payment
 
 
 app = FastAPI(title="Allica Payment Screener")
@@ -54,6 +54,12 @@ def screen_payment(payment: Payment):
     if high_value_new_payee_reason:
         risk_score += high_value_new_payee_reason["score"]
         reasons.append(high_value_new_payee_reason)
+
+    very_high_value_reason = check_very_high_value_payment(payment)
+
+    if very_high_value_reason:
+        risk_score += very_high_value_reason["score"]
+        reasons.append(very_high_value_reason)
 
     decision = get_decision(risk_score)
 
