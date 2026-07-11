@@ -27,7 +27,7 @@ class Payment(BaseModel):
     device_id: str
     payee: Payee
 
-
+# Note: Decision bands are business-policy thresholds applied to the combined rule scores
 def get_decision(risk_score):
     if risk_score >= 80:
         return "block"
@@ -70,6 +70,8 @@ def screen_payment(payment: Payment):
         reasons.append(very_high_value_reason)
 
     previous_payment_count = count_recent_outbound_payments(payment)
+
+    # Include the payment being screened in the velocity count
     current_payment_count = previous_payment_count + 1
 
     high_payment_velocity_reason = check_high_payment_velocity(
