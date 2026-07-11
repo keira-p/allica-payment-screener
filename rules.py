@@ -4,6 +4,9 @@ HIGH_VALUE_NEW_PAYEE_SCORE = 40
 VERY_HIGH_VALUE_THRESHOLD = 25000
 VERY_HIGH_VALUE_SCORE = 50
 
+HIGH_PAYMENT_VELOCITY_COUNT = 3
+HIGH_PAYMENT_VELOCITY_SCORE = 50
+
 
 def check_high_value_new_payee(payment):
     """Return a fraud reason when a high-value payment goes to a new payee."""
@@ -39,6 +42,22 @@ def check_very_high_value_payment(payment):
             "message": (
                 f"Outbound payment of £{payment.amount:,.2f} is above the "
                 f"£{VERY_HIGH_VALUE_THRESHOLD:,.2f} very high-value threshold."
+            ),
+        }
+
+    return None
+
+
+def check_high_payment_velocity(payment_count):
+    """Return a fraud reason when an account makes 3 or more rapid payments."""
+
+    if payment_count >= HIGH_PAYMENT_VELOCITY_COUNT:
+        return {
+            "code": "HIGH_PAYMENT_VELOCITY",
+            "score": HIGH_PAYMENT_VELOCITY_SCORE,
+            "message": (
+                f"The account has made {payment_count} outbound payments "
+                "within 10 minutes."
             ),
         }
 
