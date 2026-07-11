@@ -148,8 +148,6 @@ The test suite covers individual fraud rules and API behaviour, including:
 
 For a production service, I would consider:
 
-## What I would do with more time
-
 ### Evolve the fraud controls
 
 The current rules are deliberately simple and explainable. With more time, I would:
