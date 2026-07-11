@@ -3,6 +3,8 @@ from datetime import datetime
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from rules import check_high_value_new_payee
+
 
 app = FastAPI(title="Allica Payment Screener")
 
@@ -27,6 +29,16 @@ class Payment(BaseModel):
     payee: Payee
 
 
+def get_decision(risk_score):
+    if risk_score >= 80:
+        return "block"
+
+    if risk_score >= 40:
+        return "review"
+
+    return "approve"
+
+
 @app.get("/")
 def read_root():
     return {"message": "Payment screening service is running"}
@@ -34,7 +46,26 @@ def read_root():
 
 @app.post("/payments/screen")
 def screen_payment(payment: Payment):
+    risk_score = 0
+    reasons = []
+
+    high_value_new_payee_reason = check_high_value_new_payee(payment)
+
+    if high_value_new_payee_reason:
+        risk_score += high_value_new_payee_reason["score"]
+        reasons.append(high_value_new_payee_reason)
+
+    decision = get_decision(risk_score)
+
+    if reasons:
+        message = f"Payment requires {decision} because one or more fraud rules were triggered."
+    else:
+        message = "Payment approved because no fraud rules were triggered."
+
     return {
         "payment_id": payment.payment_id,
-        "message": "Payment received for screening",
+        "decision": decision,
+        "risk_score": risk_score,
+        "message": message,
+        "reasons": reasons,
     }
