@@ -171,3 +171,42 @@ def test_third_payment_within_ten_minutes_is_reviewed():
     assert third_result["decision"] == "review"
     assert third_result["risk_score"] == 50
     assert third_result["reasons"][0]["code"] == "HIGH_PAYMENT_VELOCITY"
+
+
+def test_duplicate_payment_id_returns_conflict():
+    payment = make_payment(
+        payment_id="duplicate-payment-001",
+        amount=500.00,
+        is_new_payee=False,
+    )
+
+    first_response = client.post(
+        "/payments/screen",
+        json=payment,
+    )
+    duplicate_response = client.post(
+        "/payments/screen",
+        json=payment,
+    )
+
+    assert first_response.status_code == 200
+    assert duplicate_response.status_code == 409
+    assert duplicate_response.json()["detail"] == (
+        "Payment with ID duplicate-payment-001 "
+        "has already been screened."
+    )
+
+
+def test_negative_payment_amount_is_rejected():
+    payment = make_payment(
+        payment_id="negative-payment-001",
+        amount=-500.00,
+        is_new_payee=False,
+    )
+
+    response = client.post(
+        "/payments/screen",
+        json=payment,
+    )
+
+    assert response.status_code == 422

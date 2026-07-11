@@ -68,3 +68,19 @@ def count_recent_outbound_payments(payment):
         ).fetchone()
 
     return result[0]
+
+def payment_exists(payment_id):
+    """Return True when a payment ID has already been stored."""
+
+    with sqlite3.connect(DATABASE_NAME) as connection:
+        result = connection.execute(
+            """
+            SELECT 1
+            FROM payments
+            WHERE payment_id = ?
+            LIMIT 1
+            """,
+            (payment_id,),
+        ).fetchone()
+
+    return result is not None

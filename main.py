@@ -1,7 +1,7 @@
 from datetime import datetime
-from fastapi import FastAPI
-from pydantic import BaseModel
-from database import count_recent_outbound_payments, initialise_database, save_payment
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from database import count_recent_outbound_payments, initialise_database, save_payment, payment_exists
 from rules import check_high_payment_velocity, check_high_value_new_payee, check_very_high_value_payment
 
 app = FastAPI(title="Allica Payment Screener")
@@ -20,7 +20,7 @@ class Payment(BaseModel):
     payment_id: str
     timestamp: datetime
     account_id: str
-    amount: float
+    amount: float = Field(gt=0)
     currency: str
     direction: str
     channel: str
@@ -45,6 +45,15 @@ def read_root():
 
 @app.post("/payments/screen")
 def screen_payment(payment: Payment):
+    if payment_exists(payment.payment_id):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Payment with ID {payment.payment_id} "
+                "has already been screened."
+            ),
+        )
+
     risk_score = 0
     reasons = []
 
